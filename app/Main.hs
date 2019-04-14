@@ -10,16 +10,17 @@ import AlgoXSolver
 
 main :: IO ()
 main = do
-  lines <- fmap lines $ readFile "sudoku17.10.txt"
+  (filename:_) <- getArgs
+  lines <- fmap lines $ readFile filename
   let vectors = fmap V.fromList lines
   putStrLn $ "Total puzzles read: " ++ (show $ length vectors)
   forM_ vectors $ \v -> do
     putStrLn "Puzzle"
     putStrLn $ prettyPrintPuzzle v
     putStrLn "Tree traversal solution..."
---    printSolution $ solve v
-    putStrLn "Algo X solution..."
-    printSolution $ algoXSudokuSolve v
+    printSolution $ solve v
+--    putStrLn "Algo X solution..."
+--    printSolution $ algoXSudokuSolve v
 
 
 printSolution :: Show a => [V.Vector a] -> IO ()

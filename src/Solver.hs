@@ -13,6 +13,9 @@ debug = flip trace
 characterSet :: Set.Set Char
 characterSet = Set.fromList "123456789" 
 
+indexVector :: V.Vector Int
+indexVector = V.generate 9 id
+
 getRow :: Int -> V.Vector a -> Maybe (V.Vector a)
 getRow i v
   | i >= 1 && i <= 9 = Just $ V.slice ((i-1)*9) 9 v
@@ -21,8 +24,8 @@ getRow i v
 getColumn :: Int -> V.Vector b -> Maybe (V.Vector b)
 getColumn i v
   | i >= 1 && i <= 9 = 
-    let indices = V.generate 9 (\j -> 9*j + (i-1))
-    in Just $ fmap (\j -> v V.! j) indices
+    let indexFunc = \j -> 9*j + (i-1)
+    in Just $ fmap (\j -> v V.! (indexFunc j)) indexVector
   | otherwise = Nothing
 
 getBlock :: Int -> V.Vector b -> Maybe (V.Vector b)
@@ -30,8 +33,8 @@ getBlock bId v
   | bId >= 1 && bId <= 9 = 
     let i = (bId - 1) `div` 3
         j = (bId - 1) `mod` 3
-        indices = V.generate 9 (\id -> 3*9*i + 9*(id `div` 3)+ 3*j + (id `mod` 3))
-     in Just $ fmap (\id -> v V.! id) indices
+        indexFunc = (\id -> 3*9*i + 9*(id `div` 3)+ 3*j + (id `mod` 3))
+     in Just $ fmap (\id -> v V.! (indexFunc id)) indexVector
   | otherwise = Nothing     
 
 getMissingNumbers :: Foldable t => t Char -> Set.Set Char
@@ -58,10 +61,9 @@ getPotentialCandidates v pos
 getPositionWithFewestOptions ::
   V.Vector Char -> (Int, Set.Set Char)
 getPositionWithFewestOptions v = 
-  let openPositions = filter (\p -> v V.! p == '.') [0 .. 80]
-      posOptions = map (\p -> (p+1, getPotentialCandidates v (p+1))) openPositions
-      minOption = foldl1 (\(k1,v1) (k2,v2) -> if Set.size v1 < Set.size v2 then (k1, v1) else (k2, v2) ) posOptions
-      --sortedOptions = sortBy (\(_,o1) (_,o2) -> compare (Set.size o1) (Set.size o2)) posOptions
+  let openPositions = V.map fst $ V.filter (\(p, c) -> c == '.') (V.indexed v)
+      posOptions = V.map (\p -> (p+1, getPotentialCandidates v (p+1))) openPositions
+      minOption = V.foldl1' (\(k1,v1) (k2,v2) -> if Set.size v1 < Set.size v2 then (k1, v1) else (k2, v2) ) posOptions
    in if (length openPositions > 0 ) then minOption else (0, Set.empty)
 
 
