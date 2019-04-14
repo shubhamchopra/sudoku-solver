@@ -55,11 +55,14 @@ getPotentialCandidates v pos
      in missingRowNums `Set.intersection` missingColNums `Set.intersection` missingBlkNums
   where char = v V.! (pos - 1)
 
+getPositionWithFewestOptions ::
+  V.Vector Char -> (Int, Set.Set Char)
 getPositionWithFewestOptions v = 
   let openPositions = filter (\p -> v V.! p == '.') [0 .. 80]
       posOptions = map (\p -> (p+1, getPotentialCandidates v (p+1))) openPositions
-      sortedOptions = sortBy (\(_,o1) (_,o2) -> compare (Set.size o1) (Set.size o2)) posOptions
-   in if (length openPositions > 0 ) then head sortedOptions else (0, Set.empty)
+      minOption = foldl1 (\(k1,v1) (k2,v2) -> if Set.size v1 < Set.size v2 then (k1, v1) else (k2, v2) ) posOptions
+      --sortedOptions = sortBy (\(_,o1) (_,o2) -> compare (Set.size o1) (Set.size o2)) posOptions
+   in if (length openPositions > 0 ) then minOption else (0, Set.empty)
 
 
 --solve :: V.Vector Char -> Int -> [V.Vector Char]
