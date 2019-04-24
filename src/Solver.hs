@@ -1,7 +1,7 @@
 module Solver where
 
 import qualified Data.Vector as V
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.List (sortBy)
 
@@ -10,7 +10,7 @@ import Printers
 
 debug = flip trace
 
-characterSet :: Set.Set Char
+characterSet :: Set.HashSet Char
 characterSet = Set.fromList "123456789" 
 
 indexVector :: V.Vector Int
@@ -37,13 +37,13 @@ getBlock bId v
      in Just $ fmap (\id -> v V.! (indexFunc id)) indexVector
   | otherwise = Nothing     
 
-getMissingNumbers :: Foldable t => t Char -> Set.Set Char
+getMissingNumbers :: Foldable t => t Char -> Set.HashSet Char
 getMissingNumbers v = foldl (\s i -> if i /= '.' then Set.delete i s else s) characterSet v
 
 checkIfVectorComplete :: V.Vector Char -> Bool
 checkIfVectorComplete v = V.length v == 9 && (length $ getMissingNumbers v) == 0
 
-getPotentialCandidates :: V.Vector Char -> Int -> Set.Set Char
+getPotentialCandidates :: V.Vector Char -> Int -> Set.HashSet Char
 getPotentialCandidates v pos 
   | char /= '.' = Set.singleton char
   | otherwise = 
@@ -59,25 +59,12 @@ getPotentialCandidates v pos
   where char = v V.! (pos - 1)
 
 getPositionWithFewestOptions ::
-  V.Vector Char -> (Int, Set.Set Char)
+  V.Vector Char -> (Int, Set.HashSet Char)
 getPositionWithFewestOptions v = 
   let openPositions = V.map fst $ V.filter (\(p, c) -> c == '.') (V.indexed v)
       posOptions = V.map (\p -> (p+1, getPotentialCandidates v (p+1))) openPositions
       minOption = V.foldl1' (\(k1,v1) (k2,v2) -> if Set.size v1 < Set.size v2 then (k1, v1) else (k2, v2) ) posOptions
    in if (length openPositions > 0 ) then minOption else (0, Set.empty)
-
-
---solve :: V.Vector Char -> Int -> [V.Vector Char]
---solve v 50 = 
---  --check for completeness
---  [v]
---solve v pos 
---  | char /= '.' = solve v (pos + 1)
---  | otherwise = 
---    let candidates = Set.toList $ getPotentialCandidates v pos --`debug` (prettyPrintPuzzle v)
---        recurSolve candidate = solve (V.update v (V.singleton (pos-1, candidate))) (pos+1)  
---     in concat $ map recurSolve candidates --`debug` ("pos: " ++ show pos ++ ", candidates: " ++ show candidates)
---  where char = v V.! (pos - 1)
 
 
 solve :: V.Vector Char -> [V.Vector Char]
@@ -90,3 +77,5 @@ solve v =
        [v] 
      else 
        concat $ map recurSolve candidates
+
+
