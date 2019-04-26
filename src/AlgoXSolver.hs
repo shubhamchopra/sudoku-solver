@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveGeneric #-}
 module AlgoXSolver where
 
+import GHC.Generics
 import Data.List (groupBy)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Vector as V
-import qualified Data.Map.Strict as Map
+import qualified Data.HashMap.Strict as Map
+import Data.Hashable
 
 import Printers
 import Debug.Trace
@@ -11,12 +14,14 @@ import Debug.Trace
 debug = flip trace
 
 data ConstraintRow = ConstraintRow {rowId:: Int, colId:: Int, num:: Char}
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
+
+instance Hashable ConstraintRow
 
 type ConstraintCol = String
 
-data ConstraintMatrix = ConstraintMatrix { matrix:: Set.Set (ConstraintRow, ConstraintCol)
-                                         , constraints:: Set.Set ConstraintCol
+data ConstraintMatrix = ConstraintMatrix { matrix:: Set.HashSet (ConstraintRow, ConstraintCol)
+                                         , constraints:: Set.HashSet ConstraintCol
                                          } deriving Show
 
 charSet :: [Char]
@@ -74,14 +79,15 @@ createSudokuConstraintMatrix v =
 getConstraintWithMinOptions ::
   (Ord a, Num a) => ConstraintMatrix -> (ConstraintCol, a)
 getConstraintWithMinOptions (ConstraintMatrix cMatrix cSet) = 
-  let constPossCount = Set.foldl (\m (_, const) -> Map.insert const ((Map.findWithDefault 0 const m)+1) m) Map.empty cMatrix
+  let constPossCount = Set.foldr (\(_, const) m -> Map.insert const ((Map.lookupDefault 0 const m)+1) m) Map.empty cMatrix
    in if Map.size constPossCount == Set.size cSet
          then
          -- all constraints still have viable possibilites, iterate through the map and get one with lowest number of possibilites
          let countList = Map.toList constPossCount
           in foldl1 (\(k1,v1) (k2, v2) -> if v1 < v2 then (k1, v1) else (k2, v2)) countList
       else
-         (Set.elemAt 0 $ cSet `Set.difference` (Map.keysSet constPossCount), 0)
+          ([], 0)
+--         (Set.elemAt 0 $ cSet `Set.difference` (Map.keysSet constPossCount), 0)
          
 algoXSolve ::
   ConstraintMatrix -> [ConstraintRow] -> [[ConstraintRow]]
